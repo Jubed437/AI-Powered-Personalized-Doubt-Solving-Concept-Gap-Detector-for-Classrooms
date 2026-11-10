@@ -7,7 +7,12 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : '*',
+  credentials: true,
+}));
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 function App() {
   const [backendStatus, setBackendStatus] = useState('checking...');
   const [doubts, setDoubts] = useState([]);
@@ -10,13 +12,13 @@ function App() {
 
   useEffect(() => {
     // Check backend health
-    fetch('/api/health')
+    fetch(`${API_BASE}/api/health`)
       .then((res) => res.json())
       .then((data) => setBackendStatus(data.status === 'ok' ? 'Connected (Online)' : 'Unexpected response'))
       .catch(() => setBackendStatus('Offline / Cannot connect to /api/health'));
 
     // Fetch sample doubts
-    fetch('/api/doubts')
+    fetch(`${API_BASE}/api/doubts`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -32,7 +34,7 @@ function App() {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/doubts', {
+      const response = await fetch(`${API_BASE}/api/doubts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
