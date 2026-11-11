@@ -6,16 +6,20 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "evaluate:ai": "node scripts/evaluate-ai.js"
   },
   "dependencies": {
+    "@langchain/core": "^1.3.4",
+    "@langchain/langgraph": "^1.7.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "mongodb": "^6.17.0",
     "morgan": "^1.10.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
   }
 }
-
