@@ -121,7 +121,9 @@ Public registration currently allows `"role": "teacher"` so you can create a tea
 
 ## 7. Try the complete classroom flow
 
-First, start the backend in one PowerShell window and make sure the health check works. Then open a **second** PowerShell window in the project folder and paste the commands below. The script creates new accounts each time it runs.
+First, start the backend in one PowerShell window and make sure the health check works. Then open a **second** PowerShell window in the repository root—the folder that contains `backend`—and paste the commands below. The first command, `cd backend`, moves into the backend folder. If your second window is already inside `backend`, remove that `cd backend` line. The script creates new accounts each time it runs.
+
+Registration creates each account. The separate login requests that follow return the tokens needed for the classroom and doubt requests.
 
 ```powershell
 cd backend
