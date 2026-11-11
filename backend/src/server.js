@@ -1,10 +1,12 @@
-import dotenv from 'dotenv';
-import app from './app.js';
+const app = require('./app');
+const connectDB = require('./config/db');
+const { port } = require('./config/env');
+const logger = require('./utils/logger');
 
-dotenv.config();
+const start = async () => {
+  await connectDB();
+  app.listen(port, () => logger.info(`Server running on port ${port}`));
+};
 
-const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-});
+start();

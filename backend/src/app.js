@@ -1,40 +1,28 @@
-import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
-import apiRouter from './routes/api.js';
-import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+
+const { clientUrl } = require('./config/env');
+const swaggerSpec = require('./docs/swagger');
+const routes = require('./routes');
+const notFound = require('./middlewares/notFound');
+const errorHandler = require('./middlewares/errorHandler');
+const { generalLimiter } = require('./middlewares/rateLimiter');
 
 const app = express();
 
-// Middlewares
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',') : '*',
-  credentials: true,
-}));
+app.use(helmet());
+app.use(cors({ origin: clientUrl }));
+app.use(express.json({ limit: '1mb' }));
+app.use(morgan('dev'));
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api', generalLimiter);
+app.use('/api', routes);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-}
-
-// Routes
-app.use('/api', apiRouter);
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    name: 'Classroom AI Doubt & Concept Gap API',
-    version: '1.0.0',
-    documentation: '/api/health',
-  });
-});
-
-// Error handling
-app.use(notFoundHandler);
+app.use(notFound);
 app.use(errorHandler);
 
-export default app;
-
+module.exports = app;
