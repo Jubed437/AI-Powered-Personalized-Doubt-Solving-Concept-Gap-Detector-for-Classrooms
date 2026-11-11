@@ -203,7 +203,7 @@ Institution-level management of courses, enrollments, and teacher assignments. N
 | SYS-06 | Student mastery tracking per concept | P0 | |
 | SYS-07 | Adaptive practice question selection | P1 | |
 | SYS-08 | Teacher analytics aggregation | P0 | |
-| SYS-09 | PostgreSQL data persistence | P0 | |
+| SYS-09 | MongoDB data persistence | P0 | Implemented for DSA concepts, questions, doubts, students, and practice sessions |
 | SYS-10 | Input validation on all API endpoints | P0 | |
 | SYS-11 | Structured AI output validation | P0 | |
 | SYS-12 | API rate limiting | P1 | |
@@ -229,7 +229,7 @@ graph TD
     D --> G[Student Knowledge Layer<br/>Mastery Engine]
     D --> H[Adaptive Learning Layer<br/>Practice Engine]
     C --> I[Analytics Layer<br/>Teacher Analytics Service]
-    C --> J[Persistence Layer<br/>PostgreSQL via Repository Pattern]
+    C --> J[Persistence Layer<br/>MongoDB via Native Driver]
     B --> K[Infrastructure Layer<br/>Auth + Rate Limiting + Logging]
 ```
 
@@ -264,22 +264,22 @@ graph TD
 - **Optional integration:** LangChain.js integrations may simplify chat model adapters, structured output, tool interfaces, or retrieval, but LangChain is not the workflow authority.
 - **Boundary:** LangGraph orchestrates AI reasoning and tool calls; it does not own authoritative graph traversal, mastery calculations, evidence persistence, practice scoring, authorization, or teacher analytics.
 
-### Layer 5 — Knowledge Graph Layer *(Proposed)*
+### Layer 5 — Knowledge Graph Layer
 - **Responsibilities:** Store concept nodes and prerequisite edges. Traverse prerequisite chains. Identify missing prerequisites for a given concept set.
-- **Storage:** PostgreSQL tables (MVP). Neo4j optional future enhancement.
+- **Storage:** MongoDB concept documents with embedded prerequisite IDs.
 
-### Layer 6 — Student Knowledge and Mastery Layer *(Proposed)*
+### Layer 6 — Student Knowledge and Mastery Layer
 - **Responsibilities:** Maintain per-student, per-concept mastery scores. Update mastery based on learning events. Identify gaps.
 
-### Layer 7 — Adaptive Learning Layer *(Proposed)*
+### Layer 7 — Adaptive Learning Layer
 - **Responsibilities:** Select practice questions based on student gaps. Evaluate answers. Update mastery after practice.
 
 ### Layer 8 — Analytics Layer *(Proposed)*
 - **Responsibilities:** Aggregate student mastery data into class-level insights. Identify bottlenecks and intervention candidates.
 
-### Layer 9 — Persistence Layer *(Proposed)*
-- **Technology:** PostgreSQL
-- **Responsibilities:** All database reads and writes via repository pattern. No SQL in controllers or services.
+### Layer 9 — Persistence Layer
+- **Technology:** MongoDB and the official Node.js driver.
+- **Responsibilities:** Persist doubts, concept documents, curated questions, students, and practice sessions. Mastery is deterministically recalculated from saved session evidence.
 
 ### Layer 10 — Infrastructure and Security Layer *(Proposed)*
 - **Responsibilities:** JWT authentication, role-based access control, rate limiting, request logging, secret management.
@@ -299,7 +299,7 @@ sequenceDiagram
     participant LLM as Groq Provider
     participant Graph as Knowledge Graph
     participant Mastery as Mastery Engine
-    participant DB as PostgreSQL
+    participant DB as MongoDB
 
     S->>API: POST /api/doubts { doubt, topic, studentId }
     API->>API: Validate input
@@ -396,10 +396,10 @@ graph LR
     KGS --> GR[Graph Repository]
     AC --> AnS[Analytics Service]
     AnS --> AR[Analytics Repository]
-    DR --> PG[(PostgreSQL)]
-    MR --> PG
-    GR --> PG
-    AR --> PG
+    DR --> MDB[(MongoDB)]
+    MR --> MDB
+    GR --> MDB
+    AR --> MDB
 ```
 
 ---
@@ -571,7 +571,7 @@ frontend/src/
 ```
 backend/src/
 ├── config/
-│   ├── database.js             # PostgreSQL connection pool
+│   ├── database.js             # MongoDB client
 │   ├── ai.js                   # AI provider configuration
 │   └── env.js                  # Validated environment variables
 │
@@ -675,9 +675,9 @@ Routes → Controllers → Services → Repositories → Database
 
 ## Database Decision
 
-**PostgreSQL is the proposed MVP database; it is not implemented in the current repository.** PostgreSQL fits KNOWRA because users, classes, enrollments, concepts, doubts, attempts, and learning events have strong relationships and require transactions. It also supports reliable constraints, indexes, reporting queries, JSONB for validated AI payloads, and recursive common-table expressions for prerequisite traversal.
+**MongoDB is the implemented database for the current DSA MVP.** The backend uses the official Node.js driver and creates indexes and seed documents on startup. It persists doubts, students, concepts, curated practice questions, and practice sessions with embedded attempts. Mastery scores are recalculated deterministically from the saved evidence. Authentication, classes, enrollments, and teacher analytics remain future work.
 
-PostgreSQL alone is sufficient for the MVP knowledge graph. A graph abstraction in the application should hide storage details so that Neo4j can be evaluated later only if graph size or traversal latency proves PostgreSQL insufficient. MongoDB is not required for the current domain.
+Concept prerequisite IDs live on concept documents; the application traverses the bounded seed graph in deterministic code. This keeps the current graph simple and avoids adding a separate graph database. MongoDB transactions are not required for individual practice submissions: a conditional update to the session document atomically records the answer and advances the current question.
 
 ## Conceptual Entities
 
@@ -729,100 +729,32 @@ erDiagram
     TEACHERS ||--o{ TEACHER_INTERVENTIONS : records
 ```
 
-## Proposed SQL Schema
+## MongoDB Collection Shapes
 
-The following is a logical schema, not a migration and not an implemented database.
+The backend initializes the following collections and indexes in `backend/src/db/initialize.js`:
 
-```sql
-CREATE TYPE user_role AS ENUM ('student', 'teacher');
-CREATE TYPE doubt_status AS ENUM ('pending', 'processing', 'completed', 'failed');
-
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  role user_role NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE subjects (
-  id UUID PRIMARY KEY,
-  code TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  active BOOLEAN NOT NULL DEFAULT true
-);
-
-CREATE TABLE classes (
-  id UUID PRIMARY KEY,
-  teacher_id UUID NOT NULL REFERENCES users(id),
-  subject_id UUID NOT NULL REFERENCES subjects(id),
-  name TEXT NOT NULL,
-  term TEXT NOT NULL
-);
-
-CREATE TABLE topics (
-  id UUID PRIMARY KEY,
-  subject_id UUID NOT NULL REFERENCES subjects(id),
-  name TEXT NOT NULL,
-  UNIQUE (subject_id, name)
-);
-
-CREATE TABLE concepts (
-  id UUID PRIMARY KEY,
-  topic_id UUID NOT NULL REFERENCES topics(id),
-  slug TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  learning_objective TEXT NOT NULL,
-  difficulty SMALLINT NOT NULL CHECK (difficulty BETWEEN 1 AND 5),
-  graph_version INTEGER NOT NULL DEFAULT 1,
-  active BOOLEAN NOT NULL DEFAULT true
-);
-
-CREATE TABLE concept_prerequisites (
-  concept_id UUID NOT NULL REFERENCES concepts(id),
-  prerequisite_id UUID NOT NULL REFERENCES concepts(id),
-  edge_type TEXT NOT NULL DEFAULT 'requires',
-  PRIMARY KEY (concept_id, prerequisite_id),
-  CHECK (concept_id <> prerequisite_id)
-);
-
-CREATE TABLE doubts (
-  id UUID PRIMARY KEY,
-  student_id UUID NOT NULL REFERENCES users(id),
-  class_id UUID REFERENCES classes(id),
-  subject_id UUID REFERENCES subjects(id),
-  topic TEXT,
-  question TEXT NOT NULL CHECK (char_length(question) BETWEEN 1 AND 5000),
-  status doubt_status NOT NULL DEFAULT 'pending',
-  idempotency_key TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (student_id, idempotency_key)
-);
-
-CREATE TABLE student_mastery (
-  student_id UUID NOT NULL REFERENCES users(id),
-  concept_id UUID NOT NULL REFERENCES concepts(id),
-  mastery_score NUMERIC(5,4) NOT NULL CHECK (mastery_score BETWEEN 0 AND 1),
-  evidence_count INTEGER NOT NULL DEFAULT 0 CHECK (evidence_count >= 0),
-  correct_attempts INTEGER NOT NULL DEFAULT 0,
-  incorrect_attempts INTEGER NOT NULL DEFAULT 0,
-  confidence NUMERIC(5,4) NOT NULL DEFAULT 0 CHECK (confidence BETWEEN 0 AND 1),
-  last_evidence_at TIMESTAMPTZ,
-  PRIMARY KEY (student_id, concept_id)
-);
+```json
+{
+  "concepts": {
+    "_id": "binary-search",
+    "name": "Binary search",
+    "description": "Search a sorted range by repeatedly halving the interval.",
+    "difficulty": 2,
+    "prerequisites": ["arrays", "time-complexity"],
+    "active": true
+  },
+  "practiceSessions": {
+    "_id": "session-uuid",
+    "studentId": "maya-01",
+    "status": "active",
+    "currentQuestionId": "binary-search-halving-1",
+    "usedQuestionIds": [],
+    "attempts": []
+  }
+}
 ```
 
-Additional tables follow the same conventions: UUID primary keys, foreign keys, `created_at`/`updated_at`, explicit check constraints, and indexes on foreign keys and time-based queries. Sensitive free text should be access-controlled and retained only as long as needed for the academic purpose.
-
-Recommended indexes:
-
-```sql
-CREATE INDEX doubts_student_created_idx ON doubts (student_id, created_at DESC);
-CREATE INDEX mastery_concept_score_idx ON student_mastery (concept_id, mastery_score);
-CREATE INDEX events_class_time_idx ON learning_events (class_id, occurred_at DESC);
-CREATE INDEX edges_prerequisite_idx ON concept_prerequisites (prerequisite_id);
-```
+Collections are `students`, `concepts`, `practiceQuestions`, `practiceSessions`, and `doubts`. Curated answer keys remain in `practiceQuestions` and are never sent in the student question response. Each attempt is appended to its session document through a conditional atomic update. Sensitive free text should be access-controlled and retained only as long as needed for the academic purpose.
 
 ## Example Records
 
@@ -848,11 +780,11 @@ CREATE INDEX edges_prerequisite_idx ON concept_prerequisites (prerequisite_id);
 
 ## Data Lifecycle
 
-1. A validated request creates a `doubts` row and an initial `learning_event`.
-2. AI output is validated before `ai_responses` and `doubt_concepts` are written.
-3. A transaction writes evidence and updates `student_mastery`.
-4. Practice attempts append events and update the same mastery row.
-5. Analytics reads aggregated, authorized data; it does not mutate source evidence.
+1. A validated request is analyzed and the resulting doubt is inserted into the `doubts` collection.
+2. AI output is validated before the response is returned or persisted.
+3. Practice attempts are appended atomically to the active `practiceSessions` document.
+4. Mastery is recalculated from saved attempt evidence; doubt text alone never increases mastery.
+5. Teacher analytics and class authorization are future work.
 6. Failed processing remains visible with an error code and can be safely retried using the idempotency key.
 
 ---
@@ -909,9 +841,9 @@ Recursion -> Overlapping Subproblems -> Memoization -> Dynamic Programming
 
 Graph cycle detection is a hard validation failure. Traversal must have a maximum node count and timeout guard even after validation. If a concept is missing, return a typed `CONCEPT_NOT_FOUND` error rather than silently treating it as mastered.
 
-## Storage Recommendation
+## Storage Implementation
 
-PostgreSQL stores nodes and edges with foreign keys and indexes. Recursive CTEs support normal prerequisite chains, while application-level traversal makes ranking, caching, and provider changes explicit. Neo4j becomes reasonable only after measured evidence of large graphs, frequent multi-hop queries, or unacceptable PostgreSQL traversal latency. `GraphRepository` is the abstraction boundary so the rest of KNOWRA remains storage-independent.
+MongoDB stores concept nodes with prerequisite ID arrays and uses indexed collections for concepts, question bank, students, doubts, and practice sessions. Traversal and adaptive ranking are deterministic application logic. The current DSA graph is small enough that a dedicated graph database is unnecessary.
 
 ---
 
@@ -1295,7 +1227,7 @@ All components initially have status **AVAILABLE**. Contributors must claim a ro
 | FE-03 | Render graph plus accessible tabular fallback and legend | No graph traversal logic | Known nodes/edges render; keyboard and mobile tests |
 | FE-04 | Drive session state, answer submission, feedback and completion | No selection algorithm | Resume/error/progress tests |
 | FE-05 | Show class KPI cards and action queue | No authorization decisions | Authorized data only; responsive tests |
-| FE-06 | Render filtered charts and concept tables | No SQL or aggregation rules | Filter/query synchronization; fixture tests |
+| FE-06 | Render filtered charts and concept tables | No database aggregation rules | Filter/query synchronization; fixture tests |
 | BE-01 | Implement register/login/JWT/role checks and ownership guards | No UI or AI logic | Password hashing, expiry, 401/403 tests |
 | BE-02 | Own doubt lifecycle and idempotent persistence | No prompt construction | Validated transaction and retry tests |
 | AI-01 | Implement LangGraph.js workflow, Groq adapter, schema validation, and read-only tool bindings | No final mastery decisions or authoritative writes | Node transitions, timeout, malformed output, rate limit, provider substitution, and usage tests |
@@ -1357,7 +1289,7 @@ JavaScript is the existing repository language. Continue with ES modules and con
 - Use centralized error middleware and structured logs with request IDs; never log passwords, tokens, or raw sensitive student text unnecessarily.
 - Read configuration from environment variables through one validated config module; commit only `.env.example`.
 - Use migrations for every schema change and a deterministic seed for DSA concepts.
-- Keep SQL in repositories and pure calculations in domain modules.
+- Keep database access in persistence modules and pure calculations in domain modules.
 - Prefer explicit return shapes and small functions; avoid broad catches and silent fallbacks.
 - Document public endpoints, non-obvious algorithms, assumptions, and limitations.
 
@@ -1370,7 +1302,7 @@ Mandatory standards are validation, authorization, error handling, secret protec
 - Hash passwords with a modern adaptive password hash; never store plaintext.
 - Sign short-lived JWT access tokens and protect refresh-token storage if refresh tokens are added.
 - Enforce role and class ownership on every teacher and student query.
-- Validate and length-limit all input; parameterize SQL; escape rendered content.
+- Validate and length-limit all input; use safe database driver operations; escape rendered content.
 - Rate-limit authentication, doubt submission, and AI routes.
 - Keep Groq keys server-side in environment configuration or a secret manager.
 - Minimize retained student data; define retention and deletion procedures.
@@ -1417,8 +1349,8 @@ MVP acceptance criteria: health endpoint responds successfully; valid doubts per
 |---|---|---|---|
 | 1. Architecture | Confirm contracts, graph semantics, schema, security decisions | None | Approved blueprint and issues |
 | 2. UI foundation | Build layout, design tokens, routes, mock states | Phase 1 | Navigable responsive screens |
-| 3. API/database | Add config, migrations, auth, repositories, validation | Phase 1 | Persistent health/auth/doubt foundation |
-| 4. DSA graph | Seed concepts, edges, validation, traversal | Database | Published valid graph and tests |
+| 3. API/database | Add MongoDB config, collections, auth, repositories, validation | Phase 1 | Persistent health/auth/doubt foundation |
+| 4. DSA graph | Seed concepts, prerequisite IDs, validation, traversal | Database | Published valid graph and tests |
 | 5. AI pipeline | LangGraph.js workflow, Groq adapter, prompts, extraction, explanation schemas | API + graph | Validated workflow response with explicit failure paths and deterministic-service boundary tests |
 | 6. Mastery | Evidence events, score updates, gap ranking | Graph + database | Deterministic mastery and history |
 | 7. Practice | Question bank, selector, attempts, feedback | Mastery | End-to-end adaptive session |
@@ -1472,9 +1404,9 @@ The current repository implements only the scaffold health and in-memory doubt e
 
 | ID | Question | Options | Recommendation | Status | Owner | Reason |
 |---|---|---|---|---|---|---|
-| ADR-01 | Graph storage | PostgreSQL, Neo4j | PostgreSQL first | Proposed | Project lead | Lower operational complexity |
+| ADR-01 | Graph storage | MongoDB document graph, Neo4j | MongoDB concept documents for DSA MVP | Implemented | Project lead | Simple operations for small curated graph |
 | ADR-02 | Authentication | JWT, session cookies | JWT for API MVP | Open | Backend owner | Fits separated frontend/backend |
-| ADR-03 | ORM/query layer | Raw SQL, Prisma, Knex | Decide with schema owner | Open | Database owner | Balance safety and learning curve |
+| ADR-03 | Database driver | MongoDB native driver, Mongoose | MongoDB native Node.js driver | Implemented | Project lead | Keep persistence explicit and lightweight |
 | ADR-04 | Frontend state | Context/hooks, React Query | Hooks first, React Query P1 | Proposed | Frontend owner | Avoid unnecessary MVP dependency |
 | ADR-05 | AI workflow and model | LangGraph.js with Groq, alternative orchestration/provider | LangGraph.js in Express with Groq initially | Proposed | AI owner | Stateful workflow needs with provider flexibility |
 | ADR-06 | AI evaluation | Teacher labels, automated rubric | Teacher-labelled benchmark first | Proposed | Evaluation owner | Ground truth is required |

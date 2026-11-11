@@ -47,15 +47,23 @@ The project is structured into two completely separate, independent applications
 
 - **Node.js**: v18.0.0 or higher (v20+ recommended)
 - **npm**: v8.0.0 or higher
+- **MongoDB**: local MongoDB server or MongoDB Atlas database
 
 ---
 
 ### 1. Backend Setup & Run
 
-In a terminal, navigate to the `backend` folder:
+Install and start MongoDB Community Server locally, or create a free MongoDB Atlas cluster. In PowerShell, navigate to the `backend` folder and copy the environment template:
 
-```bash
+```powershell
 cd backend
+Copy-Item .env.example .env
+notepad .env
+```
+
+Set `MONGODB_URI` in `.env` to your local MongoDB address or Atlas connection string. Set `MONGODB_DB_NAME=knowra`. Set `GROQ_API_KEY` to enable AI doubt answers. Then install and start:
+
+```powershell
 npm install
 npm run dev
 ```
@@ -63,7 +71,11 @@ npm run dev
 - **Backend API**: [http://localhost:5001](http://localhost:5001)
 - **Health Check**: [http://localhost:5001/api/health](http://localhost:5001/api/health)
 
-*(Optional: Set up environment variables via `cp .env.example .env`)*
+### AI doubt solving
+
+The backend uses MongoDB for doubts, concepts, mastery evidence, and adaptive-practice sessions, an in-process LangGraph.js workflow, and a Groq provider adapter. The backend creates indexes and seeds the DSA concept graph and question bank on startup. Without a configured AI provider, doubt processing reports an explicit setup error rather than returning a mock answer.
+
+See [backend/AI_ARCHITECTURE.md](./backend/AI_ARCHITECTURE.md) for AI workflow, prompt, and evaluation details, and [backend/LEARNING_ENGINE.md](./backend/LEARNING_ENGINE.md) for MongoDB, mastery, graph, and adaptive-practice setup. Run deterministic backend tests with `npm test` and the live labeled-model evaluation with `npm run evaluate:ai` from the backend directory.
 
 ---
 
@@ -105,6 +117,10 @@ npm start
 | `GET` | `/api/health` | Healthcheck endpoint |
 | `GET` | `/api/doubts` | List doubts and detected concept gaps |
 | `POST` | `/api/doubts` | Submit a new doubt for AI analysis |
+| `GET` | `/api/concepts/graph?studentId=maya-01` | View DSA concepts, prerequisites, and student mastery |
+| `GET` | `/api/students/:studentId/mastery` | View per-concept mastery and assessment status |
+| `POST` | `/api/practice/sessions` | Start an adaptive practice session |
+| `POST` | `/api/practice/sessions/:sessionId/attempts` | Submit an answer and receive the next adaptive question |
 
 ### Sample POST Request Body:
 ```json
@@ -121,4 +137,4 @@ npm start
 ## 🎨 Tech Stack
 
 - **Frontend**: [React 19](https://react.dev/), [Vite](https://vite.dev/), [Tailwind CSS v4](https://tailwindcss.com/)
-- **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), [Cors](https://www.npmjs.com/package/cors), [Morgan](https://www.npmjs.com/package/morgan)
+- **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), [MongoDB Node.js Driver](https://www.mongodb.com/docs/drivers/node/current/), [LangGraph.js](https://langchain-ai.github.io/langgraphjs/)
