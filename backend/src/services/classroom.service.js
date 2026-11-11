@@ -42,7 +42,7 @@ const joinClassroom = async (studentId, joinCode) => {
   const classroom = await Classroom.findOneAndUpdate(
     { joinCode, students: { $ne: studentId } },
     { $addToSet: { students: studentId } },
-    { new: true, runValidators: true }
+    { returnDocument: 'after', runValidators: true }
   );
 
   if (classroom) return classroom;

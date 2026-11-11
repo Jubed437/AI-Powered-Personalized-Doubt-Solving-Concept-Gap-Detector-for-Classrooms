@@ -93,4 +93,27 @@ describe('analyzeDoubt', () => {
     await expect(analyzeDoubt(request)).rejects.toMatchObject({ statusCode: 502 });
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
+
+  test('aborts timed-out requests and retries once', async () => {
+    jest.useFakeTimers();
+    global.fetch
+      .mockImplementationOnce((url, options) => new Promise((resolve, reject) => {
+        options.signal.addEventListener('abort', () => {
+          const error = new Error('request aborted');
+          error.name = 'AbortError';
+          reject(error);
+        }, { once: true });
+      }))
+      .mockResolvedValueOnce(providerResponse(expected));
+
+    try {
+      const result = analyzeDoubt(request);
+      await jest.advanceTimersByTimeAsync(20000);
+      await expect(result).resolves.toEqual(expected);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch.mock.calls[0][1].signal.aborted).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

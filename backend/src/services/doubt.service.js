@@ -5,12 +5,12 @@ const aiService = require('./ai.service');
 const gapService = require('./gap.service');
 const { listDoubtsSchema } = require('../validations/doubt.validation');
 
-const createDoubt = async (studentId, { classroomId, topic, text }) => {
+const createDoubt = async (studentId, { classroomId, subject, topic, text }) => {
   const classroom = await Classroom.findById(classroomId);
   if (!classroom) throw new ApiError(404, 'Classroom not found');
 
-  const isMember = classroom.students.some(
-    (id) => id.toString() === studentId
+  const isMember = classroom.students.some((id) =>
+    id.toString().toLowerCase() === studentId.toLowerCase()
   );
   if (!isMember) {
     throw new ApiError(403, 'You must join this classroom before submitting a doubt');
@@ -19,12 +19,16 @@ const createDoubt = async (studentId, { classroomId, topic, text }) => {
   const doubt = await Doubt.create({
     student: studentId,
     classroom: classroom._id,
-    subject: classroom.subject,
+    subject,
     topic,
     text,
     status: 'pending',
   });
 
+  return analyzeAndSaveDoubt(doubt);
+};
+
+const analyzeAndSaveDoubt = async (doubt) => {
   try {
     const analysis = await aiService.analyzeDoubt({
       subject: doubt.subject,
@@ -40,8 +44,27 @@ const createDoubt = async (studentId, { classroomId, topic, text }) => {
   } catch (error) {
     doubt.status = 'failed';
     await doubt.save();
-    throw error;
+    if (error.statusCode === 502) throw error;
+    throw new ApiError(
+      502,
+      'Doubt was saved, but AI analysis failed. You can retry it later.'
+    );
   }
+};
+
+const retryDoubt = async (studentId, doubtId) => {
+  const doubt = await Doubt.findById(doubtId);
+  if (!doubt) throw new ApiError(404, 'Doubt not found');
+  if (doubt.student.toString().toLowerCase() !== studentId.toLowerCase()) {
+    throw new ApiError(403, 'You do not have permission to retry this doubt');
+  }
+  if (doubt.status !== 'failed') {
+    throw new ApiError(409, 'Only failed doubts can be retried');
+  }
+
+  doubt.status = 'pending';
+  await doubt.save();
+  return analyzeAndSaveDoubt(doubt);
 };
 
 const getDoubts = async (userId, role, query) => {
@@ -57,17 +80,32 @@ const getDoubts = async (userId, role, query) => {
     );
   }
 
-  const { page, limit } = value;
-  let filter;
+  const { classroomId, status, page, limit } = value;
+  const filter = {};
 
   if (role === 'student') {
-    filter = { student: userId };
+    filter.student = userId;
   } else if (role === 'teacher') {
     const classrooms = await Classroom.find({ teacher: userId }).select('_id');
-    filter = { classroom: { $in: classrooms.map((classroom) => classroom._id) } };
+    const ownedClassroomIds = classrooms.map(({ _id }) => _id);
+
+    if (classroomId) {
+      const ownsClassroom = ownedClassroomIds.some(
+        (id) => id.toString().toLowerCase() === classroomId.toLowerCase()
+      );
+      if (!ownsClassroom) {
+        throw new ApiError(403, 'You do not have permission to view this classroom’s doubts');
+      }
+      filter.classroom = classroomId;
+    } else {
+      filter.classroom = { $in: ownedClassroomIds };
+    }
   } else {
     throw new ApiError(403, 'You do not have permission to access doubts');
   }
+
+  if (role === 'student' && classroomId) filter.classroom = classroomId;
+  if (status) filter.status = status;
 
   const [doubts, total] = await Promise.all([
     Doubt.find(filter)
@@ -89,14 +127,10 @@ const getDoubts = async (userId, role, query) => {
 };
 
 const getDoubtById = async (userId, doubtId) => {
-  if (!/^[a-f\d]{24}$/i.test(doubtId)) {
-    throw new ApiError(400, 'Invalid doubt ID');
-  }
-
   const doubt = await Doubt.findById(doubtId);
   if (!doubt) throw new ApiError(404, 'Doubt not found');
 
-  if (doubt.student.toString() === userId) return doubt;
+  if (doubt.student.toString().toLowerCase() === userId.toLowerCase()) return doubt;
 
   const classroom = await Classroom.exists({
     _id: doubt.classroom,
@@ -109,4 +143,9 @@ const getDoubtById = async (userId, doubtId) => {
   return doubt;
 };
 
-module.exports = { createDoubt, getDoubts, getDoubtById };
+module.exports = {
+  createDoubt,
+  retryDoubt,
+  getDoubts,
+  getDoubtById,
+};

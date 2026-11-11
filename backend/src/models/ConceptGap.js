@@ -22,6 +22,12 @@ const conceptGapSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    conceptKey: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
     prerequisiteOf: {
       type: String,
       default: null,
@@ -44,7 +50,7 @@ const conceptGapSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-conceptGapSchema.index({ student: 1, concept: 1 }, { unique: true });
+conceptGapSchema.index({ student: 1, conceptKey: 1 }, { unique: true });
 
 module.exports = mongoose.models.ConceptGap
   || mongoose.model('ConceptGap', conceptGapSchema);

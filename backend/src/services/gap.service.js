@@ -9,7 +9,8 @@ const aggregateGaps = (filter) => ConceptGap.aggregate([
   { $match: filter },
   {
     $group: {
-      _id: '$concept',
+      _id: '$conceptKey',
+      concept: { $first: '$concept' },
       totalOccurrences: { $sum: '$occurrences' },
       students: { $addToSet: '$student' },
       severityRank: {
@@ -28,7 +29,7 @@ const aggregateGaps = (filter) => ConceptGap.aggregate([
   {
     $project: {
       _id: 0,
-      concept: '$_id',
+      concept: 1,
       totalOccurrences: 1,
       studentCount: { $size: '$students' },
       severity: {
@@ -49,41 +50,75 @@ const recordDoubtGaps = async (doubt, gaps) => {
   const uniqueGaps = new Map();
   const severityRank = { low: 1, medium: 2, high: 3 };
 
-  for (const gap of gaps) {
-    const key = gap.concept.toLocaleLowerCase();
+  for (const { concept, severity } of gaps) {
+    const displayName = concept.trim();
+    const key = displayName.toLowerCase();
     const current = uniqueGaps.get(key);
     if (!current) {
-      uniqueGaps.set(key, gap);
-    } else if (severityRank[gap.severity] > severityRank[current.severity]) {
-      uniqueGaps.set(key, { ...current, severity: gap.severity });
+      uniqueGaps.set(key, { concept: displayName, conceptKey: key, severity });
+    } else if (severityRank[severity] > severityRank[current.severity]) {
+      uniqueGaps.set(key, { ...current, severity });
     }
   }
 
   const recordedGaps = await Promise.all(
-    [...uniqueGaps.values()].map(async ({ concept, severity }) => {
-      const filter = { student: doubt.student, concept };
+    [...uniqueGaps.values()].map(async ({ concept, conceptKey, severity }) => {
+      const filter = { student: doubt.student, conceptKey };
       const update = {
-        $set: { severity },
         $setOnInsert: {
           classroom: doubt.classroom,
           student: doubt.student,
           subject: doubt.subject,
           concept,
+          conceptKey,
+          prerequisiteOf: doubt.topic,
+          severity,
         },
         $inc: { occurrences: 1 },
         $addToSet: { doubts: doubt._id },
       };
-      const options = { new: true, upsert: true, runValidators: true };
+      const options = {
+        returnDocument: 'after',
+        upsert: true,
+        runValidators: true,
+      };
 
+      let gap;
       try {
-        return await ConceptGap.findOneAndUpdate(filter, update, options);
+        gap = await ConceptGap.findOneAndUpdate(filter, update, options);
       } catch (error) {
         if (error.code !== 11000) throw error;
-        return ConceptGap.findOneAndUpdate(filter, update, {
+        gap = await ConceptGap.findOneAndUpdate(filter, update, {
           ...options,
           upsert: false,
         });
       }
+
+      const rankExpression = {
+        $switch: {
+          branches: [
+            { case: { $eq: ['$severity', 'high'] }, then: 3 },
+            { case: { $eq: ['$severity', 'medium'] }, then: 2 },
+            { case: { $eq: ['$severity', 'low'] }, then: 1 },
+          ],
+          default: 0,
+        },
+      };
+      return ConceptGap.findOneAndUpdate(
+        filter,
+        [{
+          $set: {
+            severity: {
+              $cond: [
+                { $gte: [severityRank[severity], rankExpression] },
+                severity,
+                '$severity',
+              ],
+            },
+          },
+        }],
+        { returnDocument: 'after', updatePipeline: true }
+      ).then((updatedGap) => updatedGap || gap);
     })
   );
 

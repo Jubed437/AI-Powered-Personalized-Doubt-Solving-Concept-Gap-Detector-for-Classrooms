@@ -7,6 +7,11 @@ const createDoubt = asyncHandler(async (req, res) => {
   sendResponse(res, 201, 'Doubt submitted successfully', doubt);
 });
 
+const retryDoubt = asyncHandler(async (req, res) => {
+  const doubt = await doubtService.retryDoubt(req.user.id, req.params.id);
+  sendResponse(res, 200, 'Doubt analysis retried successfully', doubt);
+});
+
 const getDoubts = asyncHandler(async (req, res) => {
   const result = await doubtService.getDoubts(
     req.user.id,
@@ -21,4 +26,4 @@ const getDoubtById = asyncHandler(async (req, res) => {
   sendResponse(res, 200, 'Doubt retrieved successfully', doubt);
 });
 
-module.exports = { createDoubt, getDoubts, getDoubtById };
+module.exports = { createDoubt, retryDoubt, getDoubts, getDoubtById };
