@@ -3,7 +3,6 @@ import app from './app.js';
 import { closeDatabase, connectDatabase } from './db/client.js';
 import { initializeDatabase } from './db/initialize.js';
 
-const PORT = process.env.PORT || 5001;
 
 try {
   const database = await connectDatabase();
