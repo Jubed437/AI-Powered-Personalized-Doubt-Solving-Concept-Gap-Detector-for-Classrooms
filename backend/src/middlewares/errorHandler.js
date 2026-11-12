@@ -36,11 +36,14 @@ const errorHandler = (err, req, res, next) => {
 
   if (statusCode >= 500) logger.error(err);
 
+export const errorHandler = (err, req, res, next) => {
+  const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   res.status(statusCode).json({
     success: false,
-    message,
-    ...(nodeEnv === 'development' && { stack: err.stack }),
+    code: err.code || 'INTERNAL_ERROR',
+    message: statusCode >= 500 && !err.isOperational
+      ? 'An unexpected server error occurred.'
+      : err.message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   });
 };
-
-module.exports = errorHandler;

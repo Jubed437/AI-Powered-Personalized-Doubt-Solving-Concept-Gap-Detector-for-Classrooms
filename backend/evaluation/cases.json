@@ -1,0 +1,38 @@
+[
+  {
+    "id": "binary-search-boundaries",
+    "topic": "Searching",
+    "doubt": "Why do we update low to mid + 1 in binary search?",
+    "expectedConceptIds": ["binary-search", "arrays"]
+  },
+  {
+    "id": "recursive-base-case",
+    "topic": "Recursion",
+    "doubt": "My recursive factorial keeps calling itself forever. What does the base case do?",
+    "expectedConceptIds": ["recursion"]
+  },
+  {
+    "id": "dynamic-programming-reuse",
+    "topic": "Dynamic programming",
+    "doubt": "Why should I save results when solving Fibonacci recursively?",
+    "expectedConceptIds": ["dynamic-programming", "recursion"]
+  },
+  {
+    "id": "stack-order",
+    "topic": "Data structures",
+    "doubt": "How does a stack differ from a queue when removing items?",
+    "expectedConceptIds": ["stacks-and-queues"]
+  },
+  {
+    "id": "tree-traversal",
+    "topic": "Trees",
+    "doubt": "Why is recursion useful for traversing a binary tree?",
+    "expectedConceptIds": ["trees", "recursion"]
+  },
+  {
+    "id": "linear-search-growth",
+    "topic": "Complexity",
+    "doubt": "How does the number of comparisons in a linear scan grow as the array gets bigger?",
+    "expectedConceptIds": ["arrays", "time-complexity"]
+  }
+]
