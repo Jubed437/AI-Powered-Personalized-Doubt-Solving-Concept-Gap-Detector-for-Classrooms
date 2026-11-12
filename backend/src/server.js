@@ -1,17 +1,10 @@
-import 'dotenv/config';
-import app from './app.js';
-import { closeDatabase, connectDatabase } from './db/client.js';
-import { initializeDatabase } from './db/initialize.js';
+require('dotenv').config();
+const app = require('./app');
+const connectDB = require('./config/db');
+const { port } = require('./config/env');
 
-
-try {
-  const database = await connectDatabase();
-  await initializeDatabase(database);
-  app.listen(PORT, () => {
-    console.log(`Backend server is running on http://localhost:${PORT}`);
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`🚀 Backend server is running on http://localhost:${port}`);
   });
-} catch (error) {
-  console.error('Backend startup failed:', error.message);
-  await closeDatabase();
-  process.exitCode = 1;
-}
+});

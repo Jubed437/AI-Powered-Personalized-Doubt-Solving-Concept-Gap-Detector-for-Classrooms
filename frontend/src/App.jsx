@@ -23,18 +23,8 @@ function App() {
     // Check backend health
     fetch(`${API_BASE}/api/health`)
       .then((res) => res.json())
-      .then((data) => setBackendStatus(data.status === 'ok' ? 'Connected (Online)' : 'Unexpected response'))
+      .then((data) => setBackendStatus(data.success ? 'Connected (Online)' : 'Unexpected response'))
       .catch(() => setBackendStatus('Offline / Cannot connect to /api/health'));
-
-    // Fetch sample doubts
-    fetch(`${API_BASE}/api/doubts`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setDoubts(data.data);
-        }
-      })
-      .catch((err) => console.error('Failed to fetch doubts', err));
   }, []);
 
   const handleSubmit = async (e) => {

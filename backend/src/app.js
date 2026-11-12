@@ -8,7 +8,7 @@ const { clientUrl } = require('./config/env');
 const swaggerSpec = require('./docs/swagger');
 const routes = require('./routes');
 const notFound = require('./middlewares/notFound');
-const errorHandler = require('./middlewares/errorHandler');
+const { errorHandler } = require('./middlewares/errorHandler');
 const { generalLimiter } = require('./middlewares/rateLimiter');
 
 const app = express();
