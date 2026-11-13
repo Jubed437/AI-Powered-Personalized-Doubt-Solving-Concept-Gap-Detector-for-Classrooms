@@ -199,3 +199,33 @@ npm test
 ```
 
 The tests use a temporary MongoDB server and do **not** connect to the database in `.env` or to Atlas. The first run may download a MongoDB test program.
+
+## 9. Running with Docker Compose
+
+You can run the backend and an isolated MongoDB container together using Docker Compose:
+
+```powershell
+# From the backend folder:
+docker compose up --build -d
+
+# Or from the repository root:
+docker compose up --build -d
+```
+
+- **Backend API**: <http://localhost:5001/api/health>
+- **Swagger Documentation**: <http://localhost:5001/api-docs>
+- **MongoDB**: Exposed on `localhost:27017`
+
+To start with the optional Mongo Express database manager GUI:
+
+```powershell
+docker compose --profile tools up -d
+```
+Access Mongo Express at <http://localhost:8081> (default credentials: `admin` / `pass`).
+
+To stop all containers:
+
+```powershell
+docker compose down
+```
+

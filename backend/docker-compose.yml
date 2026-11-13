@@ -1,0 +1,96 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: knowra-backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5001}:5001"
+    environment:
+      - PORT=5001
+      - NODE_ENV=${NODE_ENV:-development}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/knowra}
+      - JWT_SECRET=${JWT_SECRET:-replace-with-a-long-random-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:5173}
+      - AI_SERVICE_URL=${AI_SERVICE_URL:-}
+      - AI_SERVICE_KEY=${AI_SERVICE_KEY:-}
+      - AI_PROVIDER=${AI_PROVIDER:-groq}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - AI_TIMEOUT_MS=${AI_TIMEOUT_MS:-20000}
+      - MONGODB_DB_NAME=${MONGODB_DB_NAME:-knowra}
+      - MONGODB_POOL_MAX=${MONGODB_POOL_MAX:-10}
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:' + (process.env.PORT || 5001) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - knowra-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: knowra-mongodb
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=knowra
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - knowra-network
+
+  # Optional web-based MongoDB administration tool (http://localhost:8081)
+  # Launch with: docker compose --profile tools up
+  mongo-express:
+    image: mongo-express:latest
+    container_name: knowra-mongo-express
+    restart: unless-stopped
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USER:-admin}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASS:-pass}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - knowra-network
+    profiles:
+      - tools
+
+volumes:
+  mongo-data:
+    name: knowra-mongo-data
+
+networks:
+  knowra-network:
+    name: knowra-network
+    driver: bridge
+
