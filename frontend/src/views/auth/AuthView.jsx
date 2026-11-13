@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../components/ui/Toast';
-import { GraduationCap, ArrowRight, UserCheck, ShieldCheck, Sparkles, BookOpen, ExternalLink } from 'lucide-react';
+import { ThemeControls } from '../../components/layout/ThemeControls';
+import { GraduationCap, ArrowRight, UserCheck, ShieldCheck, ExternalLink } from 'lucide-react';
 
 export function AuthView() {
   const [isRegister, setIsRegister] = useState(false);
@@ -12,6 +14,7 @@ export function AuthView() {
   const [loading, setLoading] = useState(false);
 
   const { login, register, demoLogin, backendHealth } = useAuth();
+  const { isDark, activePalette } = useTheme();
   const { addToast } = useToast();
 
   const handleSubmit = async (e) => {
@@ -47,61 +50,113 @@ export function AuthView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[300px] bg-cyan-600/10 rounded-full blur-[100px] pointer-events-none" />
+    <div
+      className={`min-h-screen flex flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-200 ${
+        isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+      }`}
+    >
+      {/* Top right floating theme controls */}
+      <div className="absolute top-6 right-6 z-20 flex items-center gap-2">
+        <ThemeControls />
+      </div>
 
-      {/* Header bar */}
+      {/* Decorative ambient gradients */}
+      <div
+        className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] rounded-full blur-[130px] pointer-events-none transition-all ${
+          isDark ? 'opacity-25' : 'opacity-35'
+        }`}
+        style={{
+          background: `radial-gradient(circle, ${activePalette.primaryHex} 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center relative z-10">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-0.5 shadow-xl shadow-indigo-500/25 mb-4">
-          <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-            <GraduationCap className="w-7 h-7 text-indigo-400" />
+        <div
+          className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr ${activePalette.gradient} p-0.5 shadow-xl mb-4`}
+        >
+          <div
+            className={`w-full h-full rounded-[14px] flex items-center justify-center ${
+              isDark ? 'bg-slate-950' : 'bg-white'
+            }`}
+          >
+            <GraduationCap
+              className="w-7 h-7"
+              style={{ color: activePalette.primaryHex }}
+            />
           </div>
         </div>
 
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+        <h1
+          className="text-3xl font-black tracking-tight"
+          style={{ color: isDark ? '#ffffff' : activePalette.primaryHex }}
+        >
           KNOWRA
         </h1>
-        <p className="text-sm text-cyan-300 font-medium mt-1">Understand. Discover. Master.</p>
-        <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto">
+        <p
+          className="text-sm font-semibold mt-1"
+          style={{ color: activePalette.primaryHex }}
+        >
+          Understand. Discover. Master.
+        </p>
+        <p
+          className={`text-xs mt-1.5 max-w-sm mx-auto ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}
+        >
           AI-Powered Adaptive Learning &amp; Prerequisite Concept Gap Detection for Classrooms
         </p>
 
         {/* Backend health & Swagger notice */}
         <div className="mt-4 flex items-center justify-center gap-3 text-xs">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300">
+          <span
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border ${
+              isDark
+                ? 'bg-slate-900/90 border-slate-800 text-slate-300'
+                : 'bg-white border-slate-200 text-slate-700 shadow-2xs'
+            }`}
+          >
             <span
               className={`w-2 h-2 rounded-full ${
                 backendHealth.online ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
               }`}
             />
-            <span>Swagger API :5001</span>
+            <span>{backendHealth.online ? 'Render API Online' : 'Connecting to Render...'}</span>
           </span>
-          <a
-            href="http://localhost:5001/api-docs/#/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 underline underline-offset-4"
-          >
-            <span>View Swagger Specs</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
+        
         </div>
       </div>
 
       {/* Auth Card */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-slate-900/70 border border-slate-800/80 shadow-2xl rounded-2xl p-6 sm:p-8 backdrop-blur-xl">
+      <div className="mt-7 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div
+          className={`border rounded-3xl p-6 sm:p-8 backdrop-blur-xl transition-all shadow-xl ${
+            isDark
+              ? 'bg-slate-900/75 border-slate-800/80'
+              : 'bg-white/95 border-slate-200 shadow-slate-200/60'
+          }`}
+        >
           {/* Tabs: Sign In / Create Account */}
-          <div className="grid grid-cols-2 p-1 bg-slate-950/80 rounded-xl mb-6 border border-slate-800/80 text-xs font-semibold">
+          <div
+            className={`grid grid-cols-2 p-1 rounded-xl mb-6 border text-xs font-semibold ${
+              isDark
+                ? 'bg-slate-950 border-slate-800'
+                : 'bg-slate-100 border-slate-200 text-slate-600'
+            }`}
+          >
             <button
               type="button"
               onClick={() => setIsRegister(false)}
-              className={`py-2 rounded-lg transition-all ${
+              style={
                 !isRegister
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? {
+                      backgroundColor: activePalette.primaryHex,
+                      color: '#ffffff',
+                    }
+                  : {}
+              }
+              className={`py-2 rounded-lg transition-all ${
+                !isRegister ? 'shadow' : 'hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Sign In
@@ -109,10 +164,16 @@ export function AuthView() {
             <button
               type="button"
               onClick={() => setIsRegister(true)}
-              className={`py-2 rounded-lg transition-all ${
+              style={
                 isRegister
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? {
+                      backgroundColor: activePalette.primaryHex,
+                      color: '#ffffff',
+                    }
+                  : {}
+              }
+              className={`py-2 rounded-lg transition-all ${
+                isRegister ? 'shadow' : 'hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Create Account
@@ -124,17 +185,32 @@ export function AuthView() {
             {isRegister && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label
+                    className={`block text-xs font-medium mb-1.5 ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
                     Account Role
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setRole('student')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all ${
+                      style={
                         role === 'student'
-                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                          ? {
+                              borderColor: activePalette.primaryHex,
+                              backgroundColor: `${activePalette.primaryHex}15`,
+                              color: activePalette.primaryHex,
+                            }
+                          : {}
+                      }
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                        role === 'student'
+                          ? ''
+                          : isDark
+                          ? 'bg-slate-950 border-slate-800 text-slate-400'
+                          : 'bg-slate-50 border-slate-200 text-slate-600'
                       }`}
                     >
                       <UserCheck className="w-3.5 h-3.5" />
@@ -143,10 +219,21 @@ export function AuthView() {
                     <button
                       type="button"
                       onClick={() => setRole('teacher')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all ${
+                      style={
                         role === 'teacher'
-                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                          ? {
+                              borderColor: activePalette.primaryHex,
+                              backgroundColor: `${activePalette.primaryHex}15`,
+                              color: activePalette.primaryHex,
+                            }
+                          : {}
+                      }
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                        role === 'teacher'
+                          ? ''
+                          : isDark
+                          ? 'bg-slate-950 border-slate-800 text-slate-400'
+                          : 'bg-slate-50 border-slate-200 text-slate-600'
                       }`}
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
@@ -156,7 +243,11 @@ export function AuthView() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label
+                    className={`block text-xs font-medium mb-1 ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
                     Full Name
                   </label>
                   <input
@@ -165,14 +256,23 @@ export function AuthView() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Maya Patel"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition-colors ${
+                      isDark
+                        ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                        : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+                    }`}
+                    style={{ outlineColor: activePalette.primaryHex }}
                   />
                 </div>
               </>
             )}
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label
+                className={`block text-xs font-medium mb-1 ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
                 Email Address
               </label>
               <input
@@ -181,12 +281,21 @@ export function AuthView() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@university.edu"
-                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+                className={`w-full px-3.5 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition-colors ${
+                  isDark
+                    ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+                }`}
+                style={{ outlineColor: activePalette.primaryHex }}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label
+                className={`block text-xs font-medium mb-1 ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
                 Password
               </label>
               <input
@@ -195,14 +304,20 @@ export function AuthView() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+                className={`w-full px-3.5 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition-colors ${
+                  isDark
+                    ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+                }`}
+                style={{ outlineColor: activePalette.primaryHex }}
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 mt-2"
+              style={{ backgroundColor: activePalette.primaryHex }}
+              className="w-full py-2.5 px-4 text-white font-semibold rounded-xl text-sm transition-all shadow-md active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 mt-2 cursor-pointer"
             >
               {loading ? (
                 <span>Authenticating...</span>
@@ -218,10 +333,20 @@ export function AuthView() {
           {/* Quick Demo buttons divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-800" />
+              <div
+                className={`w-full border-t ${
+                  isDark ? 'border-slate-800' : 'border-slate-200'
+                }`}
+              />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-slate-900 px-3 text-slate-400 font-medium">
+              <span
+                className={`px-3 font-semibold ${
+                  isDark
+                    ? 'bg-slate-900 text-slate-400'
+                    : 'bg-white text-slate-500'
+                }`}
+              >
                 Or Instant Test Login
               </span>
             </div>
@@ -232,18 +357,32 @@ export function AuthView() {
               type="button"
               disabled={loading}
               onClick={() => handleDemo('student')}
-              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/80 hover:border-slate-700 text-xs font-medium text-slate-300 hover:text-white transition-all disabled:opacity-50"
+              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                isDark
+                  ? 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800/80'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 shadow-2xs'
+              }`}
             >
-              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <UserCheck
+                className="w-3.5 h-3.5"
+                style={{ color: activePalette.primaryHex }}
+              />
               <span>Demo Student</span>
             </button>
             <button
               type="button"
               disabled={loading}
               onClick={() => handleDemo('teacher')}
-              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/80 hover:border-slate-700 text-xs font-medium text-slate-300 hover:text-white transition-all disabled:opacity-50"
+              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-semibold transition-all ${
+                isDark
+                  ? 'bg-slate-950 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800/80'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 shadow-2xs'
+              }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+              <ShieldCheck
+                className="w-3.5 h-3.5"
+                style={{ color: activePalette.primaryHex }}
+              />
               <span>Demo Teacher</span>
             </button>
           </div>
@@ -252,4 +391,3 @@ export function AuthView() {
     </div>
   );
 }
-

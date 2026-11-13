@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { classroomApi } from '../../api/classroomApi';
 import { doubtsApi } from '../../api/doubtsApi';
+import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../components/ui/Toast';
 import { MarkdownRenderer } from '../../components/common/MarkdownRenderer';
 import { SeverityBadge } from '../../components/common/SeverityBadge';
@@ -8,10 +9,8 @@ import {
   HelpCircle,
   Sparkles,
   Send,
-  BookOpen,
   AlertTriangle,
   CheckCircle2,
-  Layers,
   ArrowRight,
   RefreshCw,
 } from 'lucide-react';
@@ -25,6 +24,7 @@ const TOPIC_PRESETS = [
 ];
 
 export function AskDoubtView({ onNavigate }) {
+  const { isDark, activePalette } = useTheme();
   const [classrooms, setClassrooms] = useState([]);
   const [selectedClassroomId, setSelectedClassroomId] = useState('');
   const [subject, setSubject] = useState('');
@@ -114,33 +114,56 @@ export function AskDoubtView({ onNavigate }) {
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Header */}
       <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-2">
-          <HelpCircle className="w-3.5 h-3.5" />
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-2 border ${
+            isDark
+              ? 'bg-slate-900 border-slate-800 text-slate-300'
+              : 'bg-white border-slate-200 text-slate-700 shadow-2xs'
+          }`}
+        >
+          <HelpCircle
+            className="w-3.5 h-3.5"
+            style={{ color: activePalette.primaryHex }}
+          />
           <span>Diagnostic Doubt Submission</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+        <h1
+          className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}
+        >
           Ask a Question
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p
+          className={`text-sm mt-1 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}
+        >
           KNOWRA answers your doubt and diagnoses which foundational prerequisite concepts need review.
         </p>
       </div>
 
       {/* Classroom requirement alert if no classes */}
       {!loadingClassrooms && classrooms.length === 0 && (
-        <div className="p-4 bg-amber-950/40 border border-amber-800/80 rounded-2xl flex items-start justify-between gap-4">
+        <div
+          className={`p-4 rounded-2xl border flex items-start justify-between gap-4 ${
+            isDark
+              ? 'bg-amber-950/40 border-amber-800/80 text-amber-200'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+          }`}
+        >
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div className="text-sm">
-              <h4 className="font-semibold text-amber-200">You haven't joined any classrooms yet</h4>
-              <p className="text-amber-300/80 text-xs mt-0.5">
+              <h4 className="font-semibold">You haven't joined any classrooms yet</h4>
+              <p className="text-xs mt-0.5 opacity-90">
                 Doubts belong to a classroom so teachers can see aggregate gap analytics. Ask your teacher for a 6-character Join Code.
               </p>
             </div>
           </div>
           <button
             onClick={() => onNavigate('classrooms')}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition-all"
+            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition-all cursor-pointer"
           >
             Join a Class
           </button>
@@ -148,21 +171,36 @@ export function AskDoubtView({ onNavigate }) {
       )}
 
       {/* Main Doubt Form Card */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-xl space-y-6">
+      <div
+        className={`border rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-lg space-y-6 transition-all ${
+          isDark
+            ? 'bg-slate-900/60 border-slate-800/80'
+            : 'bg-white border-slate-200 shadow-slate-200/50'
+        }`}
+      >
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Classroom Selector */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label
+              className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${
+                isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}
+            >
               Classroom &amp; Course
             </label>
             {loadingClassrooms ? (
-              <div className="text-xs text-slate-500">Loading your classrooms...</div>
+              <div className="text-xs text-slate-400">Loading your classrooms...</div>
             ) : classrooms.length > 0 ? (
               <select
                 value={selectedClassroomId}
                 onChange={handleClassChange}
                 required
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 cursor-pointer"
+                className={`w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 cursor-pointer transition-colors ${
+                  isDark
+                    ? 'bg-slate-950 border-slate-800 text-slate-100'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white'
+                }`}
+                style={{ outlineColor: activePalette.primaryHex }}
               >
                 {classrooms.map((c) => (
                   <option key={c._id} value={c._id}>
@@ -171,7 +209,7 @@ export function AskDoubtView({ onNavigate }) {
                 ))}
               </select>
             ) : (
-              <p className="text-xs text-rose-300">
+              <p className="text-xs text-rose-500 font-semibold">
                 Please join a classroom first from the Classrooms tab.
               </p>
             )}
@@ -180,7 +218,11 @@ export function AskDoubtView({ onNavigate }) {
           {/* Subject & Topic */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+              <label
+                className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
                 Subject
               </label>
               <input
@@ -189,12 +231,21 @@ export function AskDoubtView({ onNavigate }) {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g. Computer Science"
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+                className={`w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition-colors ${
+                  isDark
+                    ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+                }`}
+                style={{ outlineColor: activePalette.primaryHex }}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+              <label
+                className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
                 Topic
               </label>
               <input
@@ -203,14 +254,23 @@ export function AskDoubtView({ onNavigate }) {
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="e.g. Binary Search"
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+                className={`w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition-colors ${
+                  isDark
+                    ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+                }`}
+                style={{ outlineColor: activePalette.primaryHex }}
               />
             </div>
           </div>
 
           {/* Quick topic presets */}
           <div>
-            <span className="block text-[11px] font-medium text-slate-400 mb-2">
+            <span
+              className={`block text-[11px] font-semibold mb-2 ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}
+            >
               Common DSA Topics (Click to quick-fill):
             </span>
             <div className="flex flex-wrap gap-2">
@@ -219,7 +279,11 @@ export function AskDoubtView({ onNavigate }) {
                   key={p.topic}
                   type="button"
                   onClick={() => applyPreset(p)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-950 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all"
+                  className={`px-2.5 py-1 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                    isDark
+                      ? 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white'
+                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 shadow-2xs'
+                  }`}
                 >
                   {p.topic}
                 </button>
@@ -230,10 +294,14 @@ export function AskDoubtView({ onNavigate }) {
           {/* Doubt Textarea */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              <label
+                className={`block text-xs font-bold uppercase tracking-wider ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
                 Detailed Doubt or Question
               </label>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-400">
                 {doubtText.length}/2000 characters
               </span>
             </div>
@@ -244,7 +312,12 @@ export function AskDoubtView({ onNavigate }) {
               value={doubtText}
               onChange={(e) => setDoubtText(e.target.value)}
               placeholder="Explain what concept you are struggling with or describe the specific error or confusion..."
-              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 leading-relaxed resize-y"
+              className={`w-full px-4 py-3 rounded-2xl text-sm border focus:outline-none focus:ring-2 leading-relaxed resize-y transition-colors ${
+                isDark
+                  ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+              }`}
+              style={{ outlineColor: activePalette.primaryHex }}
             />
           </div>
 
@@ -252,7 +325,8 @@ export function AskDoubtView({ onNavigate }) {
           <button
             type="submit"
             disabled={submitting || classrooms.length === 0}
-            className="w-full py-3 px-6 bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 active:scale-[0.99] disabled:opacity-50 text-white font-semibold rounded-2xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
+            style={{ backgroundColor: activePalette.primaryHex }}
+            className="w-full py-3 px-6 text-white font-bold rounded-2xl text-sm shadow-md active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             {submitting ? (
               <>
@@ -271,30 +345,60 @@ export function AskDoubtView({ onNavigate }) {
 
         {/* Live Result display */}
         {result && (
-          <div className="pt-6 border-t border-slate-800 animate-in slide-in-from-bottom-4 duration-300 space-y-5">
+          <div
+            className={`pt-6 border-t animate-in slide-in-from-bottom-4 duration-300 space-y-5 ${
+              isDark ? 'border-slate-800' : 'border-slate-200'
+            }`}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-lg font-bold text-white">AI Diagnosis &amp; Resolution</h3>
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                <h3
+                  className={`text-lg font-bold ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}
+                >
+                  AI Diagnosis &amp; Resolution
+                </h3>
               </div>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-medium">
+              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 font-semibold">
                 Analysis Complete
               </span>
             </div>
 
             {/* AI Explanation block */}
-            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 space-y-3">
+            <div
+              className={`border rounded-2xl p-6 space-y-3 ${
+                isDark
+                  ? 'bg-slate-950/80 border-slate-800'
+                  : 'bg-slate-50/80 border-slate-200 shadow-2xs'
+              }`}
+            >
               <MarkdownRenderer content={result.aiAnswer} />
             </div>
 
             {/* Detected Gaps highlight */}
             {result.detectedGaps && result.detectedGaps.length > 0 && (
-              <div className="p-5 bg-rose-950/20 border border-rose-900/50 rounded-2xl space-y-3">
-                <div className="flex items-center gap-2 text-rose-300 text-sm font-bold">
+              <div
+                className={`p-5 rounded-2xl border space-y-3 ${
+                  isDark
+                    ? 'bg-rose-950/20 border-rose-900/50'
+                    : 'bg-rose-50 border-rose-200'
+                }`}
+              >
+                <div
+                  className={`flex items-center gap-2 text-sm font-bold ${
+                    isDark ? 'text-rose-300' : 'text-rose-700'
+                  }`}
+                >
                   <AlertTriangle className="w-4 h-4" />
                   <span>Prerequisite Concept Gaps Identified by KNOWRA AI</span>
                 </div>
-                <p className="text-xs text-slate-300">
+                <p
+                  className={`text-xs ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}
+                >
                   KNOWRA diagnosed that this doubt stems from gaps in the foundational concepts below. Reviewing them will prevent compounding confusion.
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -311,13 +415,18 @@ export function AskDoubtView({ onNavigate }) {
                   setTopic('');
                   setResult(null);
                 }}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition-all"
+                className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  isDark
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                }`}
               >
                 Ask Another Doubt
               </button>
               <button
                 onClick={() => onNavigate('history')}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5"
+                style={{ backgroundColor: activePalette.primaryHex }}
+                className="px-4 py-2 text-white rounded-xl text-xs font-semibold shadow transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <span>View Doubt in History</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -329,4 +438,3 @@ export function AskDoubtView({ onNavigate }) {
     </div>
   );
 }
-

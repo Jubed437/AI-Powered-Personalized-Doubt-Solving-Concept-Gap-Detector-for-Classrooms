@@ -1,1 +1,175 @@
 @import "tailwindcss";
+
+:root, [data-theme="light"] {
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f1f5f9;
+  --bg-input: #ffffff;
+  --border-card: #e2e8f0;
+  --border-card-hover: #cbd5e1;
+  --border-input: #cbd5e1;
+  --text-main: #0f172a;
+  --text-sub: #475569;
+  --text-muted: #64748b;
+  --code-bg: #f8fafc;
+  --header-bg: rgba(255, 255, 255, 0.88);
+  --header-border: #e2e8f0;
+  --badge-bg: #f1f5f9;
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] {
+  --bg-app: #090d16;
+  --bg-card: rgba(15, 23, 42, 0.75);
+  --bg-card-subtle: rgba(2, 6, 23, 0.6);
+  --bg-input: #020617;
+  --border-card: rgba(51, 65, 85, 0.6);
+  --border-card-hover: rgba(71, 85, 105, 0.8);
+  --border-input: #334155;
+  --text-main: #f8fafc;
+  --text-sub: #cbd5e1;
+  --text-muted: #94a3b8;
+  --code-bg: #020617;
+  --header-bg: rgba(2, 6, 23, 0.88);
+  --header-border: rgba(30, 41, 59, 0.8);
+  --badge-bg: rgba(15, 23, 42, 0.8);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
+}
+
+/* Accent Palettes */
+[data-accent="indigo"] {
+  --accent-500: #6366f1;
+  --accent-600: #4f46e5;
+  --accent-700: #4338ca;
+  --accent-subtle: rgba(99, 102, 241, 0.12);
+  --accent-border: rgba(99, 102, 241, 0.3);
+  --accent-text: #4f46e5;
+  --accent-text-light: #6366f1;
+  --accent-shadow: rgba(79, 70, 229, 0.3);
+}
+
+[data-accent="emerald"] {
+  --accent-500: #10b981;
+  --accent-600: #059669;
+  --accent-700: #047857;
+  --accent-subtle: rgba(16, 185, 129, 0.12);
+  --accent-border: rgba(16, 185, 129, 0.3);
+  --accent-text: #059669;
+  --accent-text-light: #10b981;
+  --accent-shadow: rgba(5, 150, 105, 0.3);
+}
+
+[data-accent="cyan"] {
+  --accent-500: #06b6d4;
+  --accent-600: #0891b2;
+  --accent-700: #0e7490;
+  --accent-subtle: rgba(6, 182, 212, 0.12);
+  --accent-border: rgba(6, 182, 212, 0.3);
+  --accent-text: #0891b2;
+  --accent-text-light: #06b6d4;
+  --accent-shadow: rgba(8, 145, 178, 0.3);
+}
+
+[data-accent="violet"] {
+  --accent-500: #8b5cf6;
+  --accent-600: #7c3aed;
+  --accent-700: #6d28d9;
+  --accent-subtle: rgba(139, 92, 246, 0.12);
+  --accent-border: rgba(139, 92, 246, 0.3);
+  --accent-text: #7c3aed;
+  --accent-text-light: #8b5cf6;
+  --accent-shadow: rgba(124, 58, 237, 0.3);
+}
+
+[data-accent="rose"] {
+  --accent-500: #f43f5e;
+  --accent-600: #e11d48;
+  --accent-700: #be123c;
+  --accent-subtle: rgba(244, 63, 94, 0.12);
+  --accent-border: rgba(244, 63, 94, 0.3);
+  --accent-text: #e11d48;
+  --accent-text-light: #f43f5e;
+  --accent-shadow: rgba(225, 29, 72, 0.3);
+}
+
+[data-accent="amber"] {
+  --accent-500: #f59e0b;
+  --accent-600: #d97706;
+  --accent-700: #b45309;
+  --accent-subtle: rgba(245, 158, 11, 0.12);
+  --accent-border: rgba(245, 158, 11, 0.3);
+  --accent-text: #d97706;
+  --accent-text-light: #f59e0b;
+  --accent-shadow: rgba(217, 119, 6, 0.3);
+}
+
+/* Utility Helpers */
+.theme-bg-app {
+  background-color: var(--bg-app);
+}
+
+.theme-bg-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-card);
+  box-shadow: var(--shadow-card);
+}
+
+.theme-bg-card-subtle {
+  background-color: var(--bg-card-subtle);
+  border-color: var(--border-card);
+}
+
+.theme-border {
+  border-color: var(--border-card);
+}
+
+.theme-border-hover:hover {
+  border-color: var(--border-card-hover);
+}
+
+.theme-text-main {
+  color: var(--text-main);
+}
+
+.theme-text-sub {
+  color: var(--text-sub);
+}
+
+.theme-text-muted {
+  color: var(--text-muted);
+}
+
+.theme-bg-input {
+  background-color: var(--bg-input);
+  border-color: var(--border-input);
+  color: var(--text-main);
+}
+
+.theme-btn-accent {
+  background-color: var(--accent-600);
+  color: #ffffff;
+}
+
+.theme-btn-accent:hover:not(:disabled) {
+  background-color: var(--accent-500);
+}
+
+.theme-btn-subtle {
+  background-color: var(--accent-subtle);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+}
+
+.theme-text-accent {
+  color: var(--accent-text);
+}
+
+.theme-border-accent {
+  border-color: var(--accent-border);
+}
+
+.theme-badge-accent {
+  background-color: var(--accent-subtle);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+}
