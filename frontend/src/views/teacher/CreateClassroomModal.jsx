@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { classroomApi } from '../../api/classroomApi';
+import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../components/ui/Toast';
-import { Plus, X, BookOpen } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 export function CreateClassroomModal({ isOpen, onClose, onCreated }) {
+  const { isDark, activePalette } = useTheme();
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,28 +43,49 @@ export function CreateClassroomModal({ isOpen, onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl max-w-md w-full shadow-2xl space-y-5 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div
+        className={`border p-6 sm:p-8 rounded-3xl max-w-md w-full shadow-2xl space-y-5 relative ${
+          isDark
+            ? 'bg-slate-900 border-slate-800 text-slate-100'
+            : 'bg-white border-slate-200 text-slate-900'
+        }`}
+      >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg"
+          className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div>
-          <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3">
+          <div
+            className="w-10 h-10 rounded-2xl border flex items-center justify-center mb-3"
+            style={{
+              backgroundColor: `${activePalette.primaryHex}15`,
+              borderColor: `${activePalette.primaryHex}30`,
+              color: activePalette.primaryHex,
+            }}
+          >
             <Plus className="w-5 h-5" />
           </div>
-          <h3 className="text-lg font-bold text-white">Create New Classroom</h3>
-          <p className="text-xs text-slate-400 mt-1">
+          <h3 className="text-lg font-bold">Create New Classroom</h3>
+          <p
+            className={`text-xs mt-1 ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}
+          >
             Create a course section to receive student doubts and track classroom concept gaps.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label
+              className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${
+                isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}
+            >
               Classroom / Course Name
             </label>
             <input
@@ -71,12 +94,21 @@ export function CreateClassroomModal({ isOpen, onClose, onCreated }) {
               placeholder="e.g. Data Structures & Algorithms - Section A"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition-colors ${
+                isDark
+                  ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+              }`}
+              style={{ outlineColor: activePalette.primaryHex }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label
+              className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${
+                isDark ? 'text-slate-300' : 'text-slate-700'
+              }`}
+            >
               Subject
             </label>
             <input
@@ -85,7 +117,12 @@ export function CreateClassroomModal({ isOpen, onClose, onCreated }) {
               placeholder="e.g. Computer Science"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full px-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 transition-colors ${
+                isDark
+                  ? 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white'
+              }`}
+              style={{ outlineColor: activePalette.primaryHex }}
             />
           </div>
 
@@ -93,14 +130,19 @@ export function CreateClassroomModal({ isOpen, onClose, onCreated }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl transition-all"
+              className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                isDark
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+              }`}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+              style={{ backgroundColor: activePalette.primaryHex }}
+              className="px-5 py-2 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
             >
               {loading ? 'Creating...' : 'Create Classroom'}
             </button>
@@ -110,4 +152,3 @@ export function CreateClassroomModal({ isOpen, onClose, onCreated }) {
     </div>
   );
 }
-
